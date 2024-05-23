@@ -40,7 +40,7 @@ const GridContainer = styled("div")`
 const Doctor = ({ doctor, onDrop }) => {
   const [, drop] = useDrop(() => ({
     accept: "DOCTOR",
-    drop: (item) => onDrop(item.doctor, null), // Null task means drop to doctor list
+    drop: (item) => onDrop(item.doctor, item.task, "doctor"), // Null task means drop to doctor list
   }));
 
   const [, drag] = useDrag(() => ({
@@ -49,30 +49,34 @@ const Doctor = ({ doctor, onDrop }) => {
   }));
 
   return (
-    <DoctorItem ref={(node) => drag(drop(node))}>{doctor.name}</DoctorItem>
+    <DoctorItem ref={(node) => drag(drop(node))}>
+      {doctor.name ? doctor.name : "No Doctors Available"}
+    </DoctorItem>
   );
 };
 
-const DroppableCell = ({ task, onDrop, doctor }) => {
+const DroppableCell = ({ task, onDrop, doctor, rowData }) => {
   const [{ isOver }, drop] = useDrop(() => ({
     accept: "DOCTOR",
-    drop: (item) => onDrop(item.doctor, task),
+    drop: (item) => onDrop(item.doctor, task, null),
     collect: (monitor) => ({
       isOver: !!monitor.isOver(),
     }),
   }));
 
-  const [, drag] = useDrag(() => ({
-    type: "DOCTOR",
-    item: { doctor },
-    collect: (monitor) => ({
-      isDragging: !!monitor.isDragging(),
+  const [, drag] = useDrag(
+    () => ({
+      type: "DOCTOR",
+      item: { doctor, task },
+      collect: (monitor) => ({
+        isDragging: !!monitor.isDragging(),
+      }),
     }),
-  }));
+    [doctor]
+  );
 
   return (
     <div
-      id={task.id}
       ref={(node) => {
         drag(drop(node));
       }}
@@ -82,7 +86,7 @@ const DroppableCell = ({ task, onDrop, doctor }) => {
         backgroundColor: isOver ? "#f0f8ff" : "#ffffff",
       }}
     >
-      {doctor ? doctor.name : "Not Assigned"}
+      {doctor && doctor.hasOwnProperty("name") ? doctor.name : "Not Assigned"}
     </div>
   );
 };
@@ -91,41 +95,58 @@ const DraggableGrid = () => {
   const [data, setData] = useState(initialData);
   const [doctors, setDoctors] = useState(initialDoctors);
 
-  const handleDrop = (doctor, task) => {
+  const handleDrop = (doctor, task, type = "") => {
     if (task) {
       // Update the grid data to assign the doctor to the task
-      setData((prevData) =>
-        prevData.map((item) =>
-          item.content === task ? { ...item, doctor } : item
-        )
-      );
+      setData((prevData) => {
+        let obj = prevData.map((item) =>
+          (item.content === task && type == "doctor") ||
+          item.doctor.id === doctor.id
+            ? { ...item, doctor: {} }
+            : item.content === task
+            ? { ...item, doctor: doctor }
+            : item
+        );
+        return obj;
+      });
     }
 
     // Remove the doctor from the doctor list
-    doctor &&
-      setDoctors((prevDoctors) =>
-        prevDoctors.filter((d) => d.id !== doctor.id)
-      );
+    doctor && type == "doctor"
+      ? setDoctors((prevDoctors) => {
+          return prevDoctors.filter((d) => d.id == doctor.id).length
+            ? prevDoctors
+            : [...prevDoctors, doctor];
+        })
+      : doctor &&
+        setDoctors((prevDoctors) =>
+          prevDoctors.filter((d) => d.id !== doctor.id)
+        );
   };
 
   return (
     <Container>
       <DoctorList>
-        {doctors &&
+        {doctors && doctors.length ? (
           doctors.map((obj) => (
             <Doctor key={obj.id} doctor={obj} onDrop={handleDrop} />
-          ))}
+          ))
+        ) : (
+          <Doctor key={"doctor_list"} doctor={{}} onDrop={handleDrop} />
+        )}
       </DoctorList>
       <GridContainer>
         <DataTable value={data}>
           <Column
-            field="content"
+            field="doctor"
             header="Doctor"
             body={(rowData) => (
               <DroppableCell
+                id={rowData.id}
                 task={rowData.content}
                 onDrop={handleDrop}
                 doctor={rowData.doctor}
+                rowData={rowData}
               />
             )}
           />
