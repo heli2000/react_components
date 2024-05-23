@@ -12,9 +12,6 @@ function App() {
             <Link to={"/calendar"}>Calendar</Link>
           </li>
           <li>
-            <Link to={"/draggable"}>Draggable</Link>
-          </li>
-          <li>
             <Link to={"/draggable-grid"}>Draggable Grid</Link>
           </li>
         </ul>
