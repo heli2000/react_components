@@ -2,7 +2,7 @@ import React from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import App from "../App";
 import Calendar from "../Components/Calendar";
-import DraggableGrid from "../Components/DraggableGrid";
+import GridDNDProvider from "../Components/DraggableGrid";
 
 const index = () => {
   return (
@@ -10,7 +10,7 @@ const index = () => {
       <Routes>
         <Route path="/" element={<App />}>
           <Route path="calendar" element={<Calendar />} />
-          <Route path="draggable-grid" element={<DraggableGrid />} />
+          <Route path="draggable-grid" element={<GridDNDProvider />} />
         </Route>
       </Routes>
     </BrowserRouter>
