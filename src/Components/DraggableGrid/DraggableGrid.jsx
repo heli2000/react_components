@@ -3,44 +3,17 @@ import { useDrag, useDrop } from "react-dnd";
 import { DataTable } from "primereact/datatable";
 import { Column } from "primereact/column";
 import { data as initialData, doctors as initialDoctors } from "./gridData";
-import styled from "@emotion/styled/macro";
-
-const Container = styled("div")`
-  display: flex;
-  background-color: ${(props) =>
-    props.isDraggingOver ? "#639ee2" : "inherit"};
-`;
-
-const DoctorList = styled("div")`
-  display: flex;
-  flex-direction: column;
-  margin-right: 20px;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  background-color: #f9f9f9;
-`;
-
-const DoctorItem = styled("div")`
-  padding: 8px;
-  margin: 4px 0;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  background-color: #e3f2fd;
-  cursor: pointer;
-  &:hover {
-    background-color: #bbdefb;
-  }
-`;
-
-const GridContainer = styled("div")`
-  flex-grow: 1;
-`;
+import {
+  Container,
+  DoctorItem,
+  DoctorList,
+  GridContainer,
+} from "./DraggableGridStyling";
 
 const Doctor = ({ doctor, onDrop }) => {
   const [, drop] = useDrop(() => ({
     accept: "DOCTOR",
-    drop: (item) => onDrop(item.doctor, item.task, "doctor"), // Null task means drop to doctor list
+    drop: (item) => onDrop(item.doctor, item.task, "doctor"),
   }));
 
   const [, drag] = useDrag(() => ({
@@ -86,7 +59,11 @@ const DroppableCell = ({ task, onDrop, doctor, rowData }) => {
         backgroundColor: isOver ? "#f0f8ff" : "#ffffff",
       }}
     >
-      {doctor && doctor.hasOwnProperty("name") ? doctor.name : "Not Assigned"}
+      {doctor && doctor.length
+        ? doctor.map((obj) => {
+            return obj.name + " ";
+          })
+        : "Not Assigned"}
     </div>
   );
 };
@@ -99,29 +76,48 @@ const DraggableGrid = () => {
     if (task) {
       // Update the grid data to assign the doctor to the task
       setData((prevData) => {
-        let obj = prevData.map((item) =>
-          (item.content === task && type == "doctor") ||
-          item.doctor.id === doctor.id
-            ? { ...item, doctor: {} }
-            : item.content === task
-            ? { ...item, doctor: doctor }
-            : item
-        );
+        let obj = prevData.map((item) => {
+          let itemObj = {};
+          if (item.content === task && type === "doctor") {
+            itemObj = { ...item, doctor: [] };
+          } else if (item.content === task) {
+            let docArr = item?.doctor?.filter((obj) => obj.id === doctor.id)
+              .length
+              ? [...item.doctor]
+              : [...item.doctor, doctor];
+            itemObj = { ...item, doctor: docArr };
+          } else {
+            itemObj = { ...item };
+          }
+
+          return itemObj;
+          // return item.content === task && type === "doctor"
+          //   ? { ...item, doctor: {} }
+          //   : item.content === task
+          //   ? { ...item, doctor: doctor }
+          //   : item;
+        });
         return obj;
       });
+
+      // setData((prevData) =>
+      //   prevData.map((item) =>
+      //     item.content === task ? { ...item, doctor: doctor } : item
+      //   )
+      // );
     }
 
     // Remove the doctor from the doctor list
-    doctor && type == "doctor"
-      ? setDoctors((prevDoctors) => {
-          return prevDoctors.filter((d) => d.id == doctor.id).length
-            ? prevDoctors
-            : [...prevDoctors, doctor];
-        })
-      : doctor &&
-        setDoctors((prevDoctors) =>
-          prevDoctors.filter((d) => d.id !== doctor.id)
-        );
+    // doctor && type == "doctor"
+    //   ? setDoctors((prevDoctors) => {
+    //       return prevDoctors.filter((d) => d.id == doctor.id).length
+    //         ? prevDoctors
+    //         : [...prevDoctors, doctor];
+    //     })
+    //   : doctor &&
+    //     setDoctors((prevDoctors) =>
+    //       prevDoctors.filter((d) => d.id !== doctor.id)
+    //     );
   };
 
   return (
